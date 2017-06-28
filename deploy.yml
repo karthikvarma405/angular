@@ -1,0 +1,70 @@
+---
+ - hosts: host4
+   sudo: yes
+
+   vars:
+    webservername: apache2
+    http_path: /var/www/html/chkwwwww
+    http_backpath: /backup
+    giturl: https://{{ username }}:{{ password }}@github.com/karthikvarma405/angular.git
+    username: karthikvarma405
+    password: kshatriya79
+
+   tasks:
+
+    - name: Install git
+      apt: pkg=git update_cache=yes state=latest
+      ignore_errors: yes
+      changed_when: false
+
+    - file:
+       path: '/home/ubuntu/{{ http_backpath }}'
+       state: directory
+       mode: 0755
+
+#    - name: Backup deployment 
+#      copy:
+#       src: {{ http_path }}
+#       dest: ‘/home/ubuntu/{{ http_backpath }}’
+#       owner: root
+#       group: root
+#       mode: 0644
+#       backup: yesi
+
+    - copy:
+       src: /var/www/html/chkwwwww
+       dest: /home/ubuntu/backup
+       owner: root
+       group: root
+       mode: 0755
+       backup: yes
+       remote_src: yes
+       recurse: yes
+       state: directory
+
+    - file:
+       path: '{{ http_path }}'
+       state: directory
+       mode: 0755
+   
+    - git:
+       repo: '{{ giturl }}'
+       dest: '{{ http_path }}'
+      ignore_errors: True
+
+    - name: '{{ webservername }} virtualhost on root path {{ http_path }}'
+      lineinfile: dest="/etc/{{ webservername }}/sites-available/default" regexp="^	root*" line="	root {{ http_path }};"
+      notify:
+        - restart {{ webservername }}
+      when: webservername | match("nginx")
+
+    - name: '{{ webservername }} virtualhost on root path {{ http_path }}'
+      lineinfile: dest="/etc/{{ webservername }}/sites-available/000-default.conf" regexp="^	DocumentRoot" line=" DocumentRoot {{ http_path }}"
+      notify:
+        - restart {{ webservername }}
+      when: webservername | match("apache2")
+ 
+   handlers:
+    - name: restart {{ webservername }}
+      service: name='{{ webservername }}' state=restarted
+

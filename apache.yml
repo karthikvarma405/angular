@@ -1,0 +1,55 @@
+---
+ - hosts: host4
+   sudo: yes
+
+   vars:
+  
+    webservername: apache2
+    http_port: 7000
+
+   tasks:
+
+    - name: Install {{ webservername }}
+      apt: pkg={{ webservername }} update_cache=yes state=latest
+      notify:
+        - start {{ webservername }}
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Check if {{ webservername }} is running
+      command: service {{ webservername }} status
+      ignore_errors: yes
+      changed_when: false
+      register: service_{{ webservername }}_status
+
+    - name: start the httpd service
+      service: name={{ webservername }} state=started
+      ignore_errors: yes
+
+    - name: apache2 listen on port {{ http_port }}
+      lineinfile: dest=/etc/apache2/ports.conf regexp="^Listen " line="Listen {{ http_port }}" 
+      notify:
+        - restart apache2
+      ignore_errors: True
+      when: webservername | match("apache2")
+
+    - name: apache2 virtualhost on port {{ http_port }}
+      lineinfile: dest=/etc/apache2/sites-available/000-default.conf regexp="^<VirtualHost \*:" line="<VirtualHost *:{{ http_port }}>"
+      notify:
+        - restart apache2
+      ignore_errors: True
+      when: webservername | match("apache2")
+
+    - name: nginx virtualhost on port {{ http_port }}
+      lineinfile: dest=/etc/nginx/sites-available/default regexp="{{ item.regexp }}" line="{{ item.line }}"
+      with_items:
+       - { regexp: '^	listen 80*', line: '	listen {{ http_port }} default_server;' }
+       - { regexp: '^	listen \[*', line: '	listen [::]:{{ http_port }} default_server ipv6only=on;' }
+      notify:
+        - restart nginx
+      ignore_errors: True
+      when: webservername | match("nginx")
+
+   handlers: 
+    - name: restart {{ webservername }}
+      service: name={{ webservername }} state=started
