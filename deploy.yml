@@ -1,5 +1,5 @@
 ---
- - hosts: host3
+ - hosts: host1
    sudo: yes
 
    vars:
