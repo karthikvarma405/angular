@@ -1,5 +1,5 @@
 ---
- - hosts: host1
+ - hosts: 34.224.166.238
    sudo: yes
 
    vars:
