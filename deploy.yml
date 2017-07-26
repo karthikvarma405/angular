@@ -1,5 +1,5 @@
 ---
- - hosts: 54.82.202.133 
+ - hosts: 127.0.0.1
    sudo: yes
 
    vars:
