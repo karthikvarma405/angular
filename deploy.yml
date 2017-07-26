@@ -39,8 +39,7 @@
        mode: 0755
        backup: yes
        remote_src: yes
-       recurse: yes
-       state: directory
+
 
     - file:
        path: '{{ http_path }}'
